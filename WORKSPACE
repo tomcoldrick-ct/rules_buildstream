@@ -21,7 +21,3 @@ bst_element(
     repository = "@bazel_toolchains_fdsdk",
     element = "toolchain-complete-x86_64.bst",
 )
-
-register_toolchains(
-    "@bazel_toolchains_fdsdk//toolchain-x86_64:cc-toolchain"
-)
