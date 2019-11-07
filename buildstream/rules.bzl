@@ -29,6 +29,8 @@ def _bst_build(repository_ctx):
     element = repository_ctx.attr.element
     build_args += [
         "build",
+        "-r",
+        "blah",
         element,
     ]
 
@@ -44,9 +46,11 @@ def _bst_checkout(repository_ctx):
             checkout_args += [option]
     element = repository_ctx.attr.element
     checkout_args += [
+        "artifact",
         "checkout",
         "--force",
         element,
+        "--directory",
         checkout_dir,
     ]
 

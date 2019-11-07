@@ -6,7 +6,7 @@ load("@rules_buildstream//buildstream:rules.bzl", "bst_element")
 
 local_repository(
      name = "bazel_toolchains_fdsdk",
-     path = "/bazel-toolchains-fdsdk",
+     path = "../bazel-toolchains-fdsdk",
 )
 
 #git_repository(
