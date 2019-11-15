@@ -1,41 +1,28 @@
 """Rules for importing buildstream elements into bazel projects"""
 
-def _buildstream(repository_ctx):
-    bst_path = repository_ctx.which("bst")
-    if not bst_path:
-        fail("""rules_buildstream requires a working buildstream.
-             Please put buildstream in your path""")
+def _bst_build(ctx, project):
+    bst_options = []
+    if ctx.attr.bst_options:
+        bst_options += [option for option in ctx.attr.bst_options]
 
-    common_args = [bst_path]
+    build_options = []
+    if ctx.attr.bst_options:
+        build_options += [option for option in ctx.attr.build_options]
 
-    bst_repository = repository_ctx.attr.repository
+    element = ctx.attr.element
+    build_args = ["build"] + build_options + [element]
 
-    # repository_ctx.path only works on files, workaround required to extract dir name
-    # https://github.com/bazelbuild/bazel/issues/3901
-    project_path = repository_ctx.path(bst_repository.relative(":project.conf")).dirname
-    common_args += [
-        "--directory",
-        project_path,
-    ]
-
-    return common_args
-
-def _bst_build(repository_ctx):
-    build_args = _buildstream(repository_ctx)
-    if repository_ctx.attr.build_options:
-        for option in repository_ctx.attr.build_options:
-            build_args += [option]
-
-    element = repository_ctx.attr.element
-    build_args += [
-        "build",
-        "-r",
-        "blah",
-        element,
-    ]
-
-    result = repository_ctx.execute(build_args, quiet=False)
-    repository_ctx.report_progress("Built buildstream element: {0}".format(element))
+    # Setting use_default_shell_env means bst can be found on the $PATH. Given
+    # the myriad ways of installing buildstream which can lead to it being in
+    # all sorts of places, this seems sensible as a starting point.
+    #
+    # There are no output files for a build action.
+    ctx.actions.run_shell(
+        executable = "bst",
+        arguments = bst_options + build_args,
+        inputs = ctx.files, # The entire buildstream project
+        use_default_shell_env = True,
+    )
 
 def _bst_checkout(repository_ctx):
     checkout_dir = "."
