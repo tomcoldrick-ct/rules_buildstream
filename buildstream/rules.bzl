@@ -24,25 +24,28 @@ def _bst_build(ctx, project):
         use_default_shell_env = True,
     )
 
-def _bst_checkout(repository_ctx):
-    checkout_dir = "."
-    checkout_args = _buildstream(repository_ctx)
-    repository_ctx.file("{0}/emptyfile".format(checkout_dir), "")
-    if repository_ctx.attr.checkout_options:
-        for option in repository_ctx.attr.checkout_options:
-            checkout_args += [option]
-    element = repository_ctx.attr.element
-    checkout_args += [
-        "artifact",
-        "checkout",
-        "--force",
-        element,
-        "--directory",
-        checkout_dir,
-    ]
+def _bst_checkout(ctx, project):
+    bst_options = []
+    if ctx.attr.bst_options:
+        bst_options += [option for option in ctx.attr.bst_options]
 
-    result = repository_ctx.execute(checkout_args, quiet=False)
-    repository_ctx.report_progress("Checked out buildstream element: {0}".format(element))
+    checkout_dir = "."
+    checkout_options = []
+    if ctx.attr.checkout_options:
+        checkout_options += [option for option in ctx.attr.checkout_options]
+
+    element = ctx.attr.element
+    checkout_args = ["artifact", "checkout", "--directory", "."] + checkout_options + [element]
+
+    # Register that the checkout directory will be an output of the rule
+    ctx.actions.declare_directory(checkout_dir)
+    # Run bst to generate the contents of this directory
+    ctx.actions.run_shell(
+        executable = "bst",
+        arguments = bst_options + checkout_args,
+        inputs = ctx.files, # The entire buildstream project
+        use_default_shell_env = True,
+    )
 
 def _bst_element_impl(repository_ctx):
     if repository_ctx.attr.build_file and repository_ctx.attr.build_file_content:
