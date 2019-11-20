@@ -81,7 +81,7 @@ bst_element = rule(
     attrs = {
         "build_file": attr.label(),
         "build_file_content": attr.string(),
-        "repository": attr.label(mandatory = True),
+        "repository": attr.label(mandatory = True), # XXX Doesn't look like this is used anywhere
         "build_options": attr.string_list(),
         "checkout_options": attr.string_list(),
         "element": attr.string(mandatory = True),
