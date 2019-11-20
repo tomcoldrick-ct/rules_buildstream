@@ -47,20 +47,36 @@ def _bst_checkout(ctx, project):
         use_default_shell_env = True,
     )
 
-def _bst_element_impl(repository_ctx):
-    if repository_ctx.attr.build_file and repository_ctx.attr.build_file_content:
+
+def _bst_element_impl(ctx):
+    # Note ctx.actions.symlink is experimental and must be enabled using
+    # --experimental_allow_unresolved_symlinks
+    if ctx.attr.build_file and ctx.attr.build_file_content:
         fail("Specify one of 'build_file' or 'build_file_content', but not both.")
-    elif repository_ctx.attr.build_file:
-        repository_ctx.symlink(repository_ctx.attr.build_file, "BUILD")
-    elif repository_ctx.attr.build_file_content:
-        repository_ctx.file("BUILD", content = repository_ctx.attr.build_file_content)
+    elif ctx.attr.build_file:
+        ctx.actions.symlink(ctx.attr.build_file, "BUILD")
+    elif ctx.attr.build_file_content:
+        ctx.actions.write("BUILD", content = ctx.attr.build_file_content)
     else:
-        repository_ctx.template("BUILD", Label("@rules_buildstream//buildstream:BUILD.pkg"))
+        ctx.actions.symlink("BUILD", Label("@rules_buildstream//buildstream:BUILD.pkg"))
 
-    _bst_build(repository_ctx)
-    _bst_checkout(repository_ctx)
+    # We're assuming there is a single dependency and that it's output is a
+    # directory tree containing a single BuildStream project
+    input_files = ctx.attr.deps[0][DefaultInfo].files
+    project = None
+    for f in input_files:
+        if f.basename == "project.conf" and not project_path:
+            project_path = f.dirname
+        elif f.basename == "project.conf" and project_path:
+            fail("Found multiple buildstream projects. Only one expected.")
+    if not project:
+        fail("No buildstream project provided in input")
 
-bst_element = repository_rule(
+    _bst_build(ctx, project)
+    _bst_checkout(ctx, project)
+
+
+bst_element = rule(
     implementation = _bst_element_impl,
     attrs = {
         "build_file": attr.label(),
@@ -69,5 +85,6 @@ bst_element = repository_rule(
         "build_options": attr.string_list(),
         "checkout_options": attr.string_list(),
         "element": attr.string(mandatory = True),
+        "bst_options": attr.string_list(),
     },
 )
