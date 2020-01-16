@@ -29,8 +29,6 @@ def _bst_build(repository_ctx):
     element = repository_ctx.attr.element
     build_args += [
         "build",
-        "-r",
-        "blah",
         element,
     ]
 
