@@ -32,7 +32,12 @@ def _bst_build(repository_ctx):
         element,
     ]
 
-    result = repository_ctx.execute(build_args, quiet=False)
+    result = repository_ctx.execute(build_args, quiet=False, timeout=3600)
+    if result == 256:
+        fail("""BuildStream execution timed out.
+	     Try populating your local cache""")
+    if result != 0:
+        fail("""BuildStream build failed""")
     repository_ctx.report_progress("Built buildstream element: {0}".format(element))
 
 def _bst_checkout(repository_ctx):
@@ -53,6 +58,8 @@ def _bst_checkout(repository_ctx):
     ]
 
     result = repository_ctx.execute(checkout_args, quiet=False)
+    if result != 0:
+        fail("""BuildStream checkout failed""")
     repository_ctx.report_progress("Checked out buildstream element: {0}".format(element))
 
 def _bst_element_impl(repository_ctx):
